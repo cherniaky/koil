@@ -1,3 +1,5 @@
+const EPS = 1e-6;
+
 class Vector2 {
     x: number;
     y: number;
@@ -46,19 +48,23 @@ function drawCircle(ctx: CanvasRenderingContext2D, center: Vector2, radius: numb
     ctx.fill()
 }
 
-const TOTAL_ROWS = 10, TOTAL_COLS = 10;
-
+const GRID_ROWS = 10, GRID_COLS = 10;
+let scene = new Array(GRID_ROWS).fill(0).map(() => new Array(GRID_COLS).fill(0));
 
 function snap(value: number, d: number): number {
-    const eps = 1e-6;
     if (d > 0) {
-        return Math.ceil(value + eps);
+        return Math.ceil(value + EPS);
     }
     if (d < 0) {
-        return Math.floor(value - eps)
+        return Math.floor(value - EPS)
     }
 
     return value
+}
+
+function hittingCell(p1: Vector2, p2: Vector2): Vector2 {
+    const d = p2.sub(p1)
+    return new Vector2(Math.floor(p2.x + Math.sign(d.x) * EPS), Math.floor(p2.y + Math.sign(d.y) * EPS));
 }
 
 function rayStep(p1: Vector2, p2: Vector2) {
@@ -107,26 +113,36 @@ function rayStep(p1: Vector2, p2: Vector2) {
 function drawGrid(ctx: CanvasRenderingContext2D, p2: Vector2 | undefined) {
     ctx.reset()
 
-    const col_width = ctx.canvas.width / TOTAL_COLS;
-    const rows_height = ctx.canvas.height / TOTAL_ROWS;
+    const col_width = ctx.canvas.width / GRID_COLS;
+    const rows_height = ctx.canvas.height / GRID_ROWS;
 
     ctx.scale(col_width, rows_height)
     ctx.lineWidth = 0.02
 
     ctx.strokeStyle = "#101010";
-    ctx.fillRect(0, 0, TOTAL_COLS, TOTAL_ROWS);
+    ctx.fillRect(0, 0, GRID_COLS, GRID_ROWS);
 
-    ctx.strokeStyle = "#444444"
-    for (let x = 0; x <= TOTAL_COLS; x++) {
-        strokeLine(ctx, new Vector2(x, 0), new Vector2(x, TOTAL_ROWS))
+    for (let y = 0; y < GRID_ROWS; y++) {
+        for (let x = 0; x < GRID_COLS; x++) {
+            if (scene[y][x] !== 0) {
+                ctx.fillStyle = "#303030"
+                ctx.fillRect(x, y, 1, 1)
+                ctx.fill()
+            }
+        }
     }
 
-    for (let y = 0; y <= TOTAL_ROWS; y++) {
-        strokeLine(ctx, new Vector2(0, y), new Vector2(TOTAL_COLS, y))
+    ctx.strokeStyle = "#444444"
+    for (let x = 0; x <= GRID_COLS; x++) {
+        strokeLine(ctx, new Vector2(x, 0), new Vector2(x, GRID_ROWS))
+    }
+
+    for (let y = 0; y <= GRID_ROWS; y++) {
+        strokeLine(ctx, new Vector2(0, y), new Vector2(GRID_COLS, y))
     }
 
     ctx.fillStyle = "magenta"
-    let p1 = new Vector2(TOTAL_COLS * 0.33, TOTAL_ROWS * 0.44)
+    let p1 = new Vector2(GRID_COLS * 0.33, GRID_ROWS * 0.44)
     drawCircle(ctx, p1, 0.2)
 
     if (p2) {
@@ -135,7 +151,14 @@ function drawGrid(ctx: CanvasRenderingContext2D, p2: Vector2 | undefined) {
         ctx.strokeStyle = "magenta"
         strokeLine(ctx, p1, p2)
 
-        for (let i = 0; i < 5; i++) {
+        for (; ;) {
+            const c = hittingCell(p1, p2)
+            if (c.x < 0 || c.y < 0 || c.x >= GRID_COLS || c.y >= GRID_ROWS ||
+                scene[c.y][c.x] === 1
+            ) {
+                break
+            }
+
             const p3 = rayStep(p1, p2)
 
             drawCircle(ctx, p3, 0.2)
@@ -164,8 +187,10 @@ function drawGrid(ctx: CanvasRenderingContext2D, p2: Vector2 | undefined) {
         return
     }
 
-    const col_width = ctx.canvas.width / TOTAL_COLS;
-    const rows_height = ctx.canvas.height / TOTAL_ROWS;
+    scene[1][1] = 1;
+
+    const col_width = ctx.canvas.width / GRID_COLS;
+    const rows_height = ctx.canvas.height / GRID_ROWS;
 
     let p2: undefined | Vector2;
     canvas.addEventListener("mousemove", (event) => {
