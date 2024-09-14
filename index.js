@@ -12,6 +12,22 @@ var Vector2 = /** @class */ (function () {
         this.x = x;
         this.y = y;
     }
+    Vector2.prototype.add = function (that) {
+        return new Vector2(this.x + that.x, this.y + that.y);
+    };
+    Vector2.prototype.sub = function (that) {
+        return new Vector2(this.x - that.x, this.y - that.y);
+    };
+    Vector2.prototype.length = function () {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    };
+    Vector2.prototype.norm = function () {
+        var length = this.length();
+        return new Vector2(this.x / length, this.y / length);
+    };
+    Vector2.prototype.distanceTo = function (that) {
+        return this.sub(that).length();
+    };
     Vector2.prototype.array = function () {
         return [this.x, this.y];
     };
@@ -29,6 +45,49 @@ function drawCircle(ctx, center, radius) {
     ctx.fill();
 }
 var TOTAL_ROWS = 10, TOTAL_COLS = 10;
+function snap(value, d) {
+    var eps = 1e-6;
+    if (d > 0) {
+        return Math.ceil(value + eps);
+    }
+    if (d < 0) {
+        return Math.floor(value - eps);
+    }
+    return value;
+}
+function rayStep(p1, p2) {
+    // y1 = k * x1 + c
+    // y2 = k * x2 + c
+    // c = y1 - k * x1
+    // y2 = k * x2 + y1 - k * x1
+    // y2 - y1 = k * (x2 - x1)
+    // k = (y2 - y1) / (x2 - x1) 
+    // c = y1 - k * x1
+    var dy = (p2.y - p1.y);
+    var dx = (p2.x - p1.x);
+    var p3 = p2;
+    if (dx !== 0) {
+        var k = dy / dx;
+        var c = p1.y - k * p1.x;
+        var x3 = snap(p2.x, dx);
+        var y3 = x3 * k + c;
+        p3 = new Vector2(x3, y3);
+        if (k !== 0) {
+            var y3_candidate = snap(p2.y, dy);
+            var x3_candidate = (y3_candidate - c) / k;
+            var p3_candidate = new Vector2(x3_candidate, y3_candidate);
+            if (p2.distanceTo(p3) > p2.distanceTo(p3_candidate)) {
+                p3 = p3_candidate;
+            }
+        }
+    }
+    else {
+        var x3 = p2.x;
+        var y3 = snap(p2.y, dy);
+        p3 = new Vector2(x3, y3);
+    }
+    return p3;
+}
 function drawGrid(ctx, p2) {
     ctx.reset();
     var col_width = ctx.canvas.width / TOTAL_COLS;
@@ -51,6 +110,13 @@ function drawGrid(ctx, p2) {
         drawCircle(ctx, p2, 0.2);
         ctx.strokeStyle = "magenta";
         strokeLine(ctx, p1, p2);
+        for (var i = 0; i < 5; i++) {
+            var p3 = rayStep(p1, p2);
+            drawCircle(ctx, p3, 0.2);
+            strokeLine(ctx, p3, p2);
+            p1 = p2;
+            p2 = p3;
+        }
     }
 }
 (function () {
