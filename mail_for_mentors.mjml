@@ -141,15 +141,15 @@
 
                 <mj-column vertical-align="middle" align="right">
                     <mj-social align="right">
-                        <mj-social-element href="url"
+                        <mj-social-element href="https://www.instagram.com/hackpn_sk/"
                             src="https://cdn.discordapp.com/attachments/999290621346984017/1284568665483907153/instagram.png?ex=66e71b4b&is=66e5c9cb&hm=a25d521c6335d46c4b9ca9bb17fa4c484cf954346eb71b3eb90bf92cc09ba23a&">
                         </mj-social-element>
 
-                        <mj-social-element href="url"
+                        <mj-social-element href="https://discord.gg/ENtBmjsxuW"
                             src="https://cdn.discordapp.com/attachments/999290621346984017/1284569047685533841/discord.png?ex=66e71ba7&is=66e5ca27&hm=fc1de8b3b214214699813dcd35d516f22010c30c8ec77887b015195ab9dc77dd&">
                         </mj-social-element>
 
-                        <mj-social-element href="url"
+                        <mj-social-element href="https://www.linkedin.com/company/hack-pn"
                             src="https://cdn.discordapp.com/attachments/999290621346984017/1284569169240784907/linkedin.png?ex=66e71bc4&is=66e5ca44&hm=dbdbbfc951cf5495000aa37c847f5fa6b13af744553c2c7e59f3078c8e40c963&">
                         </mj-social-element>
 
