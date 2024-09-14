@@ -56,7 +56,8 @@
                 </mj-column>
                 <mj-column vertical-align="middle">
                     <mj-text padding="0" align="right" font-size="14px" color="#71717A">
-                        <a href="https://hackpn.com" style="color: #71717A; text-decoration: none;"> hackpn.com </a> 
+                        <a target="_blank" href="https://hackpn.com" style="color: #71717A; text-decoration: none;">
+                            hackpn.com </a>
                     </mj-text>
                 </mj-column>
             </mj-section>
@@ -79,12 +80,17 @@
                         Ahoj #NAME#,
                     </mj-text>
                     <mj-text padding="20px 0px" font-size="16px" line-height="1.6" color="#71717A">
-                        radi by sme Vás pozvali, aby ste sa zapojili ako mentor na našom nadchádzajúcom hackathone
-                        HackPN, ktorý sa bude konať <span style="color: black;">v piatok 25. októbra od 8:00 do 15:00</span> v priestoroch
-                        SPŠE Piešťany. Vaše skúsenosti by boli obrovským prínosom pre mladé talenty, ktoré chcú
-                        rozbehnúť svoje nápady a inovácie.
+                        sme tím Argon, ktorý organizuje hackathony v rámci projektu HackPN na stredných školách s cieľom
+                        motivovať a posúvať mladých ľudí vpred. Radi by sme Vás pozvali, aby ste sa zapojili ako mentor
+                        na našom druhom hackathone HackPN, ktorý sa bude konať <span style="color: black;">v piatok 25.
+                            októbra od 8:00 do 15:00 v
+                            priestoroch SPŠE Piešťany.</span>
                     </mj-text>
-                    <mj-text padding="0" font-size="16px" line-height="1.6" color="#71717A">
+                    <mj-text padding="0px 0px" font-size="16px" line-height="1.6" color="#71717A">
+                        Vaše skúsenosti by boli obrovským prínosom pre mladé talenty, ktoré chcú rozbehnúť svoje nápady
+                        a inovácie, a my veríme, že spolu dokážeme účastníkom pomôcť na ich ceste k úspechu.
+                    </mj-text>
+                    <mj-text padding="20px 0 0" font-size="16px" line-height="1.6" color="#71717A">
                         Ako mentor budete mať príležitosť diskutovať s účastníkmi o tom, ako vytvoriť funkčnú webovú
                         stránku, ako odprezentovať projekt tak, aby zaujal, a zdieľať akékoľvek ďalšie tipy, ktoré im
                         môžu pomôcť. Určite aj vy odídete so zaujímavými postrehmi a skúsenosťami.
@@ -122,7 +128,8 @@
                     </mj-text>
 
                     <mj-text font-size="14px" padding="0" color="#666666" align="left">
-                        © 2024 HackPN. Powered by <span style="color: #ff0000;">Argon Team</span> All rights reserved.
+                        © 2024 HackPN. Powered by <a style="color: #ff0000; text-decoration: none;" target="_blank"
+                            href="https://linktr.ee/argonteam">Argon Team</a> All rights reserved.
                     </mj-text>
                 </mj-column>
             </mj-section>
@@ -136,13 +143,16 @@
 
                 <mj-column vertical-align="middle" align="right">
                     <mj-social align="right">
-                        <mj-social-element href="url" src="https://cdn.discordapp.com/attachments/999290621346984017/1284568665483907153/instagram.png?ex=66e71b4b&is=66e5c9cb&hm=a25d521c6335d46c4b9ca9bb17fa4c484cf954346eb71b3eb90bf92cc09ba23a&">
+                        <mj-social-element href="url"
+                            src="https://cdn.discordapp.com/attachments/999290621346984017/1284568665483907153/instagram.png?ex=66e71b4b&is=66e5c9cb&hm=a25d521c6335d46c4b9ca9bb17fa4c484cf954346eb71b3eb90bf92cc09ba23a&">
                         </mj-social-element>
 
-                        <mj-social-element href="url" src="https://cdn.discordapp.com/attachments/999290621346984017/1284569047685533841/discord.png?ex=66e71ba7&is=66e5ca27&hm=fc1de8b3b214214699813dcd35d516f22010c30c8ec77887b015195ab9dc77dd&">
+                        <mj-social-element href="url"
+                            src="https://cdn.discordapp.com/attachments/999290621346984017/1284569047685533841/discord.png?ex=66e71ba7&is=66e5ca27&hm=fc1de8b3b214214699813dcd35d516f22010c30c8ec77887b015195ab9dc77dd&">
                         </mj-social-element>
-                        
-                        <mj-social-element href="url" src="https://cdn.discordapp.com/attachments/999290621346984017/1284569169240784907/linkedin.png?ex=66e71bc4&is=66e5ca44&hm=dbdbbfc951cf5495000aa37c847f5fa6b13af744553c2c7e59f3078c8e40c963&">
+
+                        <mj-social-element href="url"
+                            src="https://cdn.discordapp.com/attachments/999290621346984017/1284569169240784907/linkedin.png?ex=66e71bc4&is=66e5ca44&hm=dbdbbfc951cf5495000aa37c847f5fa6b13af744553c2c7e59f3078c8e40c963&">
                         </mj-social-element>
 
                     </mj-social>
