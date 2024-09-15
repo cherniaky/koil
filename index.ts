@@ -1,9 +1,14 @@
 const EPS = 1e-6;
+const FOV = Math.PI / 2
+const NEAR_CLIPPING_PLANE_DISTANCE = 1;
 
 class Vector2 {
     x: number;
     y: number;
 
+    static fromAngle(angle: number): Vector2 {
+        return new Vector2(Math.cos(angle), Math.sin(angle));
+    }
     constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
@@ -25,6 +30,17 @@ class Vector2 {
         return new Vector2(this.x * that.x, this.y * that.y)
     }
 
+    rot90() {
+        return new Vector2(this.y * -1, this.x)
+    }
+
+    dot(that: Vector2): number {
+        return this.x * that.x + this.y * that.y;
+    }
+
+    lerp(that: Vector2, perc: number) {
+        return that.sub(this).scale(perc).add(this)
+    }
     scale(number: number) {
         return new Vector2(this.x * number, this.y * number);
     }
@@ -44,6 +60,25 @@ class Vector2 {
 
     array(): [number, number] {
         return [this.x, this.y]
+    }
+}
+
+class Player {
+    position: Vector2;
+    direction: number;
+
+    constructor(position: Vector2, direction: number) {
+        this.position = position;
+        this.direction = direction;
+    }
+
+    fovRange(): [Vector2, Vector2] {
+        const halfClippingPlaneLength = Math.tan(FOV * 0.5) * NEAR_CLIPPING_PLANE_DISTANCE;
+        const directionVector = this.position.add(Vector2.fromAngle(this.direction).scale(NEAR_CLIPPING_PLANE_DISTANCE))
+        const secondHalfClipping = directionVector.add(Vector2.fromAngle(this.direction).rot90().scale(halfClippingPlaneLength))
+        const firstHalfClipping = directionVector.sub(Vector2.fromAngle(this.direction).rot90().scale(halfClippingPlaneLength))
+
+        return [firstHalfClipping, secondHalfClipping]
     }
 }
 
@@ -119,7 +154,7 @@ function rayStep(p1: Vector2, p2: Vector2) {
 
     return p3
 }
-type Grid = Array<Array<number>>
+type Grid = Array<Array<string | null>>
 
 function getGridSize(grid: Grid): Vector2 {
     const y = grid.length;
@@ -127,25 +162,79 @@ function getGridSize(grid: Grid): Vector2 {
     return new Vector2(x, y)
 }
 
-function drawMinimap(ctx: CanvasRenderingContext2D, p2: Vector2 | undefined, minimapOffset: Vector2, minimapSize: Vector2, grid: Grid) {
-    ctx.reset()
+function insideGrid(grid: Grid, p: Vector2): boolean {
+    const gridSize = getGridSize(grid);
+    if (p.x >= 0 && p.x < gridSize.x && p.y >= 0 && p.y < gridSize.y) {
+        return true
+    }
+
+    return false
+}
+
+function castRay(grid: Grid, p1: Vector2, p2: Vector2): Vector2 {
+    for (; ;) {
+        const c = hittingCell(p1, p2)
+        if (!insideGrid(grid, c) || grid[c.y][c.x] !== null) {
+            break;
+        }
+
+        const p3 = rayStep(p1, p2)
+
+        p1 = p2
+        p2 = p3
+    }
+
+    return p2
+}
+
+function render(ctx: CanvasRenderingContext2D, grid: Grid, player: Player) {
+    ctx.save()
+
+    const SCREEN_WIDTH = 400;
+    const lineWidth = Math.ceil(ctx.canvas.width / SCREEN_WIDTH);
+    const [firstHalfClipping, secondHalfClipping] = player.fovRange()
+
+    for (let x = 0; x < SCREEN_WIDTH; x++) {
+        const planePoint = firstHalfClipping.lerp(secondHalfClipping, x / SCREEN_WIDTH);
+        const endPoint = castRay(grid, player.position, planePoint)
+
+        const c = hittingCell(player.position, endPoint)
+
+        if (insideGrid(grid, c)) {
+            const color = grid[c.y][c.x];
+            if (color !== null) {
+                const dotProduct = Vector2.fromAngle(player.direction).dot(endPoint.sub(player.position))
+                const lineHeight = ctx.canvas.height / dotProduct
+                ctx.fillStyle = color;
+                ctx.fillRect(x * lineWidth, ctx.canvas.height / 2 - lineHeight / 2, lineWidth, lineHeight)
+            }
+        }
+    }
+
+    ctx.restore()
+}
+
+function drawMinimap(ctx: CanvasRenderingContext2D, player: Player, minimapOffset: Vector2, minimapSize: Vector2, grid: Grid) {
+    ctx.save()
 
     const gridSize = getGridSize(grid);
 
     const col_width = minimapSize.x / gridSize.x;
     const rows_height = minimapSize.y / gridSize.y;
 
-    ctx.strokeStyle = "#101010";
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
     ctx.translate(...minimapOffset.array())
     ctx.scale(col_width, rows_height)
+
+    ctx.fillStyle = "#181818"
+    ctx.fillRect(0, 0, ...gridSize.array())
+
     ctx.lineWidth = 0.08
 
     for (let y = 0; y < gridSize.y; y++) {
         for (let x = 0; x < gridSize.x; x++) {
-            if (grid[y][x] !== 0) {
-                ctx.fillStyle = "#303030"
+            const color = grid[y][x];
+            if (color !== null) {
+                ctx.fillStyle = color
                 ctx.fillRect(x, y, 1, 1)
                 ctx.fill()
             }
@@ -162,33 +251,41 @@ function drawMinimap(ctx: CanvasRenderingContext2D, p2: Vector2 | undefined, min
     }
 
     ctx.fillStyle = "magenta"
-    let p1 = new Vector2(gridSize.x * 0.93, gridSize.y * 0.93)
-    drawCircle(ctx, p1, 0.2)
+    drawCircle(ctx, player.position, 0.2)
 
-    if (p2) {
-        drawCircle(ctx, p2, 0.2)
+    const [firstHalfClipping, secondHalfClipping] = player.fovRange()
 
-        ctx.strokeStyle = "magenta"
-        strokeLine(ctx, p1, p2)
+    ctx.strokeStyle = "magenta"
+    strokeLine(ctx, firstHalfClipping, secondHalfClipping)
+    strokeLine(ctx, player.position, secondHalfClipping)
+    strokeLine(ctx, player.position, firstHalfClipping)
 
-        for (; ;) {
-            const c = hittingCell(p1, p2)
-            if (c.x < 0 || c.y < 0 || c.x >= gridSize.x || c.y >= gridSize.y ||
-                grid[c.y][c.x] === 1
-            ) {
-                break
-            }
+    //if (p2) {
+    //    drawCircle(ctx, p2, 0.2)
 
-            const p3 = rayStep(p1, p2)
+    //    ctx.strokeStyle = "magenta"
+    //    strokeLine(ctx, p1, p2)
 
-            drawCircle(ctx, p3, 0.2)
+    //    for (; ;) {
+    //        const c = hittingCell(p1, p2)
+    //        if (c.x < 0 || c.y < 0 || c.x >= gridSize.x || c.y >= gridSize.y ||
+    //            grid[c.y][c.x] === 1
+    //        ) {
+    //            break
+    //        }
 
-            strokeLine(ctx, p3, p2)
+    //        const p3 = rayStep(p1, p2)
 
-            p1 = p2
-            p2 = p3
-        }
-    }
+    //        drawCircle(ctx, p3, 0.2)
+
+    //        strokeLine(ctx, p3, p2)
+
+    //        p1 = p2
+    //        p2 = p3
+    //    }
+    //}
+
+    ctx.restore()
 }
 
 (() => {
@@ -198,8 +295,9 @@ function drawMinimap(ctx: CanvasRenderingContext2D, p2: Vector2 | undefined, min
         return
     }
 
-    canvas.width = 800;
-    canvas.height = 800;
+    const factor = 80
+    canvas.width = 16 * factor;
+    canvas.height = 9 * factor;
 
     const ctx = canvas.getContext("2d");
 
@@ -208,30 +306,70 @@ function drawMinimap(ctx: CanvasRenderingContext2D, p2: Vector2 | undefined, min
     }
 
     let grid = [
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 1, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, "blue", null, null, null, null],
+        [null, null, "gray", "orange", null, null, null, null],
+        [null, "red", null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
     ]
     const gridSize = getGridSize(grid)
 
-    grid[1][1] = 1;
-
-    const cellSize = ctx.canvas.width * 0.05;
+    const cellSize = ctx.canvas.width * 0.03;
     const minimapSize = gridSize.scale(cellSize);
-    const minimapOffset = new Vector2(ctx.canvas.width * 0.02, ctx.canvas.height * 0.02);
+    const minimapOffset = new Vector2(ctx.canvas.width * 0.02, ctx.canvas.width * 0.02);
 
-    let p2: undefined | Vector2;
-    canvas.addEventListener("mousemove", (event) => {
-        p2 = new Vector2(event.offsetX, event.offsetY).sub(minimapOffset)
-            .div(minimapSize).mul(gridSize);
+    const player = new Player(new Vector2(gridSize.x * 0.63, gridSize.y * 0.70), Math.PI * 1.25)
 
-        drawMinimap(ctx, p2, minimapOffset, minimapSize, grid)
+    window.addEventListener("keydown", (event) => {
+        switch (event.key) {
+            case "a":
+                player.direction -= Math.PI / 10;
+
+                ctx.strokeStyle = "#101010";
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                render(ctx, grid, player)
+                drawMinimap(ctx, player, minimapOffset, minimapSize, grid)
+                break;
+            case "d":
+                player.direction += Math.PI / 10;
+
+                ctx.strokeStyle = "#101010";
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                render(ctx, grid, player)
+                drawMinimap(ctx, player, minimapOffset, minimapSize, grid)
+                break;
+            case "w":
+                player.position = player.position.add(Vector2.fromAngle(player.direction).scale(0.25))
+
+                ctx.strokeStyle = "#101010";
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                render(ctx, grid, player)
+                drawMinimap(ctx, player, minimapOffset, minimapSize, grid)
+                break;
+            case "s":
+                player.position = player.position.sub(Vector2.fromAngle(player.direction).scale(0.25))
+
+                ctx.strokeStyle = "#101010";
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                render(ctx, grid, player)
+                drawMinimap(ctx, player, minimapOffset, minimapSize, grid)
+                break;
+
+            default:
+                break;
+        }
     })
 
-    drawMinimap(ctx, p2, minimapOffset, minimapSize, grid)
+    ctx.strokeStyle = "#101010";
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    render(ctx, grid, player)
+    drawMinimap(ctx, player, minimapOffset, minimapSize, grid)
 
 })()
