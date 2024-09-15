@@ -2,6 +2,8 @@
 const EPS = 1e-6;
 const FOV = Math.PI / 2;
 const NEAR_CLIPPING_PLANE_DISTANCE = 1;
+const SCREEN_WIDTH = 300;
+const PLAYER_STEP_LEN = 0.5;
 class Vector2 {
     static fromAngle(angle) {
         return new Vector2(Math.cos(angle), Math.sin(angle));
@@ -142,9 +144,8 @@ function castRay(grid, p1, p2) {
     }
     return p2;
 }
-function render(ctx, grid, player) {
+function renderScene(ctx, grid, player) {
     ctx.save();
-    const SCREEN_WIDTH = 400;
     const lineWidth = Math.ceil(ctx.canvas.width / SCREEN_WIDTH);
     const [firstHalfClipping, secondHalfClipping] = player.fovRange();
     for (let x = 0; x < SCREEN_WIDTH; x++) {
@@ -163,7 +164,7 @@ function render(ctx, grid, player) {
     }
     ctx.restore();
 }
-function drawMinimap(ctx, player, minimapOffset, minimapSize, grid) {
+function renderMinimap(ctx, player, minimapOffset, minimapSize, grid) {
     ctx.save();
     const gridSize = getGridSize(grid);
     const col_width = minimapSize.x / gridSize.x;
@@ -217,6 +218,16 @@ function drawMinimap(ctx, player, minimapOffset, minimapSize, grid) {
     //}
     ctx.restore();
 }
+function renderGame(ctx, player, grid) {
+    const gridSize = getGridSize(grid);
+    const cellSize = ctx.canvas.width * 0.03;
+    const minimapSize = gridSize.scale(cellSize);
+    const minimapOffset = new Vector2(ctx.canvas.width * 0.02, ctx.canvas.width * 0.02);
+    ctx.strokeStyle = "#101010";
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    renderScene(ctx, grid, player);
+    renderMinimap(ctx, player, minimapOffset, minimapSize, grid);
+}
 (() => {
     const canvas = document.querySelector("#game");
     if (!canvas) {
@@ -239,47 +250,29 @@ function drawMinimap(ctx, player, minimapOffset, minimapSize, grid) {
         [null, null, null, null, null, null, null, null],
     ];
     const gridSize = getGridSize(grid);
-    const cellSize = ctx.canvas.width * 0.03;
-    const minimapSize = gridSize.scale(cellSize);
-    const minimapOffset = new Vector2(ctx.canvas.width * 0.02, ctx.canvas.width * 0.02);
     const player = new Player(new Vector2(gridSize.x * 0.63, gridSize.y * 0.70), Math.PI * 1.25);
     window.addEventListener("keydown", (event) => {
         switch (event.key) {
             case "a":
                 player.direction -= Math.PI / 10;
-                ctx.strokeStyle = "#101010";
-                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                render(ctx, grid, player);
-                drawMinimap(ctx, player, minimapOffset, minimapSize, grid);
+                renderGame(ctx, player, grid);
                 break;
             case "d":
                 player.direction += Math.PI / 10;
-                ctx.strokeStyle = "#101010";
-                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                render(ctx, grid, player);
-                drawMinimap(ctx, player, minimapOffset, minimapSize, grid);
+                renderGame(ctx, player, grid);
                 break;
             case "w":
-                player.position = player.position.add(Vector2.fromAngle(player.direction).scale(0.25));
-                ctx.strokeStyle = "#101010";
-                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                render(ctx, grid, player);
-                drawMinimap(ctx, player, minimapOffset, minimapSize, grid);
+                player.position = player.position.add(Vector2.fromAngle(player.direction).scale(PLAYER_STEP_LEN));
+                renderGame(ctx, player, grid);
                 break;
             case "s":
-                player.position = player.position.sub(Vector2.fromAngle(player.direction).scale(0.25));
-                ctx.strokeStyle = "#101010";
-                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                render(ctx, grid, player);
-                drawMinimap(ctx, player, minimapOffset, minimapSize, grid);
+                player.position = player.position.sub(Vector2.fromAngle(player.direction).scale(PLAYER_STEP_LEN));
+                renderGame(ctx, player, grid);
                 break;
             default:
                 break;
         }
     });
-    ctx.strokeStyle = "#101010";
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    render(ctx, grid, player);
-    drawMinimap(ctx, player, minimapOffset, minimapSize, grid);
+    renderGame(ctx, player, grid);
 })();
 //# sourceMappingURL=index.js.map
