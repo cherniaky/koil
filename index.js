@@ -11,6 +11,15 @@ class Vector2 {
     sub(that) {
         return new Vector2(this.x - that.x, this.y - that.y);
     }
+    div(that) {
+        return new Vector2(this.x / that.x, this.y / that.y);
+    }
+    mul(that) {
+        return new Vector2(this.x * that.x, this.y * that.y);
+    }
+    scale(number) {
+        return new Vector2(this.x * number, this.y * number);
+    }
     length() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }
@@ -36,8 +45,6 @@ function drawCircle(ctx, center, radius) {
     ctx.arc(...center.array(), radius, 0, 2 * Math.PI);
     ctx.fill();
 }
-const GRID_ROWS = 10, GRID_COLS = 10;
-let scene = new Array(GRID_ROWS).fill(0).map(() => new Array(GRID_COLS).fill(0));
 function snap(value, d) {
     if (d > 0) {
         return Math.ceil(value + EPS);
@@ -84,17 +91,24 @@ function rayStep(p1, p2) {
     }
     return p3;
 }
-function drawGrid(ctx, p2) {
+function getGridSize(grid) {
+    const y = grid.length;
+    const x = grid[0].length;
+    return new Vector2(x, y);
+}
+function drawMinimap(ctx, p2, minimapOffset, minimapSize, grid) {
     ctx.reset();
-    const col_width = ctx.canvas.width / GRID_COLS;
-    const rows_height = ctx.canvas.height / GRID_ROWS;
-    ctx.scale(col_width, rows_height);
-    ctx.lineWidth = 0.02;
+    const gridSize = getGridSize(grid);
+    const col_width = minimapSize.x / gridSize.x;
+    const rows_height = minimapSize.y / gridSize.y;
     ctx.strokeStyle = "#101010";
-    ctx.fillRect(0, 0, GRID_COLS, GRID_ROWS);
-    for (let y = 0; y < GRID_ROWS; y++) {
-        for (let x = 0; x < GRID_COLS; x++) {
-            if (scene[y][x] !== 0) {
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.translate(...minimapOffset.array());
+    ctx.scale(col_width, rows_height);
+    ctx.lineWidth = 0.08;
+    for (let y = 0; y < gridSize.y; y++) {
+        for (let x = 0; x < gridSize.x; x++) {
+            if (grid[y][x] !== 0) {
                 ctx.fillStyle = "#303030";
                 ctx.fillRect(x, y, 1, 1);
                 ctx.fill();
@@ -102,14 +116,14 @@ function drawGrid(ctx, p2) {
         }
     }
     ctx.strokeStyle = "#444444";
-    for (let x = 0; x <= GRID_COLS; x++) {
-        strokeLine(ctx, new Vector2(x, 0), new Vector2(x, GRID_ROWS));
+    for (let x = 0; x <= gridSize.x; x++) {
+        strokeLine(ctx, new Vector2(x, 0), new Vector2(x, gridSize.y));
     }
-    for (let y = 0; y <= GRID_ROWS; y++) {
-        strokeLine(ctx, new Vector2(0, y), new Vector2(GRID_COLS, y));
+    for (let y = 0; y <= gridSize.y; y++) {
+        strokeLine(ctx, new Vector2(0, y), new Vector2(gridSize.x, y));
     }
     ctx.fillStyle = "magenta";
-    let p1 = new Vector2(GRID_COLS * 0.33, GRID_ROWS * 0.44);
+    let p1 = new Vector2(gridSize.x * 0.93, gridSize.y * 0.93);
     drawCircle(ctx, p1, 0.2);
     if (p2) {
         drawCircle(ctx, p2, 0.2);
@@ -117,8 +131,8 @@ function drawGrid(ctx, p2) {
         strokeLine(ctx, p1, p2);
         for (;;) {
             const c = hittingCell(p1, p2);
-            if (c.x < 0 || c.y < 0 || c.x >= GRID_COLS || c.y >= GRID_ROWS ||
-                scene[c.y][c.x] === 1) {
+            if (c.x < 0 || c.y < 0 || c.x >= gridSize.x || c.y >= gridSize.y ||
+                grid[c.y][c.x] === 1) {
                 break;
             }
             const p3 = rayStep(p1, p2);
@@ -140,13 +154,25 @@ function drawGrid(ctx, p2) {
     if (!ctx) {
         return;
     }
-    scene[1][1] = 1;
-    const col_width = ctx.canvas.width / GRID_COLS;
-    const rows_height = ctx.canvas.height / GRID_ROWS;
+    let grid = [
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 1, 1, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    const gridSize = getGridSize(grid);
+    grid[1][1] = 1;
+    const cellSize = ctx.canvas.width * 0.05;
+    const minimapSize = gridSize.scale(cellSize);
+    const minimapOffset = new Vector2(ctx.canvas.width * 0.02, ctx.canvas.height * 0.02);
     let p2;
     canvas.addEventListener("mousemove", (event) => {
-        p2 = new Vector2(event.offsetX / col_width, event.offsetY / rows_height);
-        drawGrid(ctx, p2);
+        p2 = new Vector2(event.offsetX, event.offsetY).sub(minimapOffset)
+            .div(minimapSize).mul(gridSize);
+        drawMinimap(ctx, p2, minimapOffset, minimapSize, grid);
     });
-    drawGrid(ctx, p2);
+    drawMinimap(ctx, p2, minimapOffset, minimapSize, grid);
 })();
